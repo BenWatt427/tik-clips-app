@@ -1,0 +1,7 @@
+{
+    "gConfig":{
+        "ffmpegPath": "C:\\Users\\benwa\\Desktop\\ffmpeg-master-latest-win64-gpl-shared\\bin\\ffmpeg",
+        "videoOutputFolder": "C:\\Users\\benwa\\Desktop\\clip-outputs",
+        "port": 3000
+    }
+}
