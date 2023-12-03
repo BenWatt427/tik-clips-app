@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch Server",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/server.js",
+        "runtimeArgs": ["--inspect"],
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "outputCapture": "std"
+      },
+      {
+        "name": "Launch Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder}/public",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*"
+        },
+        "trace": true,
+        "sourceMaps": true,
+        "skipFiles": [
+          "/node_modules/**/*.js"
+        ]
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Launch Server and Chrome",
+        "configurations": ["Launch Server", "Launch Chrome"]
+      }
+    ],
+    "tasks": [
+      {
+        "label": "start-dev",
+        "type": "npm",
+        "script": "start",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      }
+    ]
+  }
+  
