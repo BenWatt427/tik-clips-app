@@ -31,14 +31,16 @@ app.post('/capture-videos', async (req, res) => {
         status: 'pending',
         message: `Video capture #${captureId} for ${url} is pending.`,
       });
-     await captureVideo(captureId, url, captureQueue);
+      const response = await captureVideo(captureId, url, captureQueue);
+      if (!response.success) {
+        return res.status(400).json('Video capture failed');
+      }
     }
-    res.status(200).json({ captureIds, message: 'Video capture complete' });
-
+    return res.status(200).json({ captureIds, message: 'Video capture complete' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).send('Error capturing videos')
+    return res.status(500).json({ error: `Failed to capture video for ${url}` });
   }
 });
 

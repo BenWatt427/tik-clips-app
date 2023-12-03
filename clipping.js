@@ -1,89 +1,81 @@
 const puppeteer = require('puppeteer');
-const ffmpeg = require('fluent-ffmpeg');
+const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 const path = require('path');
-const cfg = require('./config');
+const { promisify } = require('util');
+const fs = require('fs');
 
-const ffmpegPath = cfg.gConfig.ffmpegPath;
-ffmpeg.setFfmpegPath(ffmpegPath);
+const writeFileAsync = promisify(fs.writeFile);
+
+const cfg = require('./config.json');  // Assuming you have a config file
 
 const videoOutputFolder = cfg.gConfig.videoOutputFolder;
+// peg_path = cfg.gConfig.ffmpegPath
 
-async function handleConsentPopup(page) {
-  // Customize this function based on the structure of the consent pop-up on the specific website
-
-  // Example: Clicking on a button with id "acceptButton" for consent
-  await page.click('button:contains("Accept All")');
-
-  // You may need to wait for the page to reload or for the consent pop-up to disappear
-  await page.waitForTimeout(2000);  // Adjust the timeout as needed
+const vidConfig = {
+  followNewTab: true,
+  fps: 25,
+  ffmpegPath: 'C:\\Users\\benwa\\Desktop\\ffmpeg-master-latest-win64-gpl-shared\\bin\\ffmpeg' || null,
+  videoFrame: {
+    width: 1024,
+    height: 768,
+  },
+  videoCrf: 18,
+  videoCodec: 'libvpx-vp9', // or libx264, libvpx-vp9
+  videoPreset: 'ultrafast',
+  videoBitrate: 1000,
+  autoPad: {
+    color: 'black' | '#35A5FF',
+  },
+  aspectRatio: '4:3',
 }
 
-async function captureVideo(captureId, videoUrl, captureQueue) {
-  const captureData = { captureId, status: 'pending', message: '' }; // Replace this with your capture data structure
-  captureQueue.push(captureData);
-
-  const browser = await puppeteer.launch();
+async function captureVideo(captureId, videoUrl) {
+  const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
 
   try {
+    // Navigate to the video URL
     await page.goto(videoUrl, { waitUntil: 'domcontentloaded' });
-    // Handle consent pop-up (customize this based on your specific case)
-    await handleConsentPopup(page);
-    await page.waitForSelector('video');
 
-    await page.evaluate(() => {
-      document.querySelector('video').play();
-    });
+    // Handle consent pop-ups if necessary
+    //await handleConsentPopUp(page);
 
-    // Capture for 30 seconds, taking a screenshot every second
-    for (let i = 0; i < 30; i++) {
-      const screenshotPath = path.join(videoOutputFolder, `screenshot_${i + 1}.png`);
-      await page.screenshot({ path: screenshotPath });
+    // Start recording the screen
+    const recorder = new PuppeteerScreenRecorder(page, vidConfig);
+    await recorder.start(path.join(videoOutputFolder, `output_${captureId}.webm`));
 
-      // Use setTimeout to introduce a delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  } finally {
+    // Wait for 30 seconds (or your desired duration)
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Stop recording
+    await recorder.stop();
+
+    console.log(`Video recorded to: ${videoOutputFolder}`);
+    const outputPathFile = path.join(videoOutputFolder, `outputPath_${captureId}.txt`);
     try {
-      await browser.close();
-      captureData.status = 'completed';
-      captureData.message = `Video capture #${captureId} is completed.`;
-
-      const screenshotPattern = path.join(videoOutputFolder, 'screenshot_%d.png');
-      const videoOutputPath = path.join(videoOutputFolder, `output_${captureId}.mp4`);
-
-      // encode video
-      await new Promise((resolve, reject) => {
-        ffmpeg()
-          .input(screenshotPattern)
-          .inputFPS(30)
-          .videoCodec('libx264')
-          .outputOptions('-pix_fmt yuv1080p')
-          .output(videoOutputPath)
-          .on('end', () => {
-            console.log(`Video encoding for ${captureId} complete`);
-            resolve();
-          })
-          .on('error', (err) => {
-            console.error(`Error encoding video: ${err.message}`);
-            console.error(err);
-            reject(err);
-          })
-          .on('progress', (progress) => {
-            console.log(`Processing: ${progress.percent}% done`);
-          })
-          .run();
-      });
-    } catch (err) {
-      console.error(`Error during video encoding: ${err.message}`);
-      captureData.status = 'failed';
-      captureData.message = `Video capture #${captureId} failed during encoding.`;
-      return err;
+      const content = `Output Path: ${path.join(videoOutputFolder, `output_${captureId}.webm`)}`;
+      await writeFileAsync(outputPathFile, content);
+    } catch (writeError) {
+      console.error(`Error writing file: ${writeError.message}`);
     }
+
+  } catch (error) {
+    console.error(`Error during video capture: ${error.message}`);
+    throw error;
+  } finally {
+    await browser.close();
+  }
+  console.log('Video written to stream successfully');
+  return {
+    success: true,
   }
 }
 
+async function handleConsentPopUp(page) {
+  // Add your logic to handle the consent pop-up here
+  // You might need to click a button or interact with an element to accept the consent
+  // For example, if there is a button with the text "Accept", you can click it:
+  await page.click('button:contains("Accept")');
+}
+
 module.exports = captureVideo;
-// Example usage
-// const captureQueue = [];
-// captureVideo(1, 'https://www.youtube.com/watch?v=gb2jgHpbowY');  // Replace with the actual video URL
