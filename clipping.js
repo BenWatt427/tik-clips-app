@@ -20,7 +20,7 @@ const vidConfig = {
     height: 768,
   },
   videoCrf: 18,
-  videoCodec: 'libvpx-vp9', // or libx264, libvpx-vp9
+  videoCodec: 'libx264', // or libx264, libvpx-vp9
   videoPreset: 'ultrafast',
   videoBitrate: 1000,
   autoPad: {
@@ -38,27 +38,31 @@ async function captureVideo(captureId, videoUrl) {
     await page.goto(videoUrl, { waitUntil: 'domcontentloaded' });
 
     // Handle consent pop-ups if necessary
-    //await handleConsentPopUp(page);
+    await handleConsentPopUp(page);
+
+    // Find the video player
+    const videoPlayer = await page.$('video');
 
     // Start recording the screen
-    const recorder = new PuppeteerScreenRecorder(page, vidConfig);
-    await recorder.start(path.join(videoOutputFolder, `output_${captureId}.webm`));
+    if (videoPlayer) {
+      const recorder = new PuppeteerScreenRecorder(page, vidConfig);
+      await recorder.start(path.join(videoOutputFolder, `output_${captureId}.webm`));
 
-    // Wait for 30 seconds (or your desired duration)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for 30 seconds (or your desired duration)
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Stop recording
-    await recorder.stop();
+      // Stop recording
+      await recorder.stop();
 
-    console.log(`Video recorded to: ${videoOutputFolder}`);
-    const outputPathFile = path.join(videoOutputFolder, `outputPath_${captureId}.txt`);
-    try {
-      const content = `Output Path: ${path.join(videoOutputFolder, `output_${captureId}.webm`)}`;
-      await writeFileAsync(outputPathFile, content);
-    } catch (writeError) {
-      console.error(`Error writing file: ${writeError.message}`);
+      console.log(`Video recorded to: ${videoOutputFolder}`);
+      const outputPathFile = path.join(videoOutputFolder, `outputPath_${captureId}.txt`);
+      try {
+        const content = `Output Path: ${path.join(videoOutputFolder, `output_${captureId}.webm`)}`;
+        await writeFileAsync(outputPathFile, content);
+      } catch (writeError) {
+        console.error(`Error writing file: ${writeError.message}`);
+      }
     }
-
   } catch (error) {
     console.error(`Error during video capture: ${error.message}`);
     throw error;
@@ -72,10 +76,12 @@ async function captureVideo(captureId, videoUrl) {
 }
 
 async function handleConsentPopUp(page) {
-  // Add your logic to handle the consent pop-up here
-  // You might need to click a button or interact with an element to accept the consent
-  // For example, if there is a button with the text "Accept", you can click it:
-  await page.click('button:contains("Accept")');
+  await page.evaluate(() => {
+    const acceptButton = Array.from(document.querySelectorAll('button')).find(button => button.textContent.includes('Accept'));
+    if (acceptButton) {
+      acceptButton.click();
+    }
+  });
 }
 
 module.exports = captureVideo;

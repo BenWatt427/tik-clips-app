@@ -4,24 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video Capture</title>
+  <link rel="stylesheet" href="home.css">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 20px;
-      background-color: black;
-      color: aliceblue;
-    }
-    #captureButton {
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #videoUrls {
-      width: 80%;
-      padding: 10px;
-      margin-top: 10px;
-    }
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+  }
+
+  h1 {
+    color: #007bff;
+  }
+
+  p {
+    margin-bottom: 20px;
+  }
+
+  #videoUrls {
+    width: 80%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+
+  #captureButton {
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+
+  #captureButton:hover {
+    background-color: #0056b3;
+  }
   </style>
 </head>
 <body>
